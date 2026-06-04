@@ -4,6 +4,7 @@ const app = express();
 const mongoose = require('mongoose');
 const cookieParser = require("cookie-parser");
 const authRoute = require("./Routes/AuthRoute");
+const path = require("path");
 
 const {HoldingModel} = require("./model/HoldingModel");
 const { PositionModel } = require('./model/PositionModel');
@@ -35,6 +36,14 @@ app.get("/allHoldings", async (req, res) => {
         console.error("GET /allHoldings error:", err);
         res.status(500).json({ error: "Failed to fetch holdings" });
     }
+});
+
+app.use(express.static(path.join(__dirname, "../frontend/build")));
+
+app.get("*", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../frontend/build/index.html")
+  );
 });
 
 app.get("/allPositions", async (req, res) => {
