@@ -27,7 +27,7 @@ const Menu = () => {
 
       localStorage.clear();
 
-      window.location.href = "http://localhost:3000";
+      window.location.href = "https://zerodha-clone-silk-eta.vercel.app";
     } catch (err) {
       console.error(err);
     }
