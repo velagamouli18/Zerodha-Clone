@@ -53,22 +53,44 @@ app.get("/allPositions", async (req, res) => {
     }
 });
 
+// app.get("/stockPrice/:symbol", async (req, res) => {
+//     try {
+//         const symbol = req.params.symbol;
+
+//         const quote = await yahooFinance.quote(`${symbol}.NS`);
+
+//         res.json({
+//             symbol,
+//             price: quote.regularMarketPrice,
+//         });
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).json({
+//             error: "Failed to fetch stock price",
+//         });
+//     }
+// });
+
 app.get("/stockPrice/:symbol", async (req, res) => {
-    try {
-        const symbol = req.params.symbol;
+  try {
+    const symbol = req.params.symbol;
 
-        const quote = await yahooFinance.quote(`${symbol}.NS`);
+    const quote = await yahooFinance.quote(
+      `${symbol}.NS`
+    );
 
-        res.json({
-            symbol,
-            price: quote.regularMarketPrice,
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({
-            error: "Failed to fetch stock price",
-        });
-    }
+    res.json({
+      symbol,
+      price: quote.regularMarketPrice,
+    });
+  } catch (err) {
+    console.error("Yahoo Error:", err);
+
+    res.status(500).json({
+      error: "Failed to fetch stock price",
+      details: err.message,
+    });
+  }
 });
 
 app.post("/newOrder",authRequired,async(req,res)=>{
