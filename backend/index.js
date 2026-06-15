@@ -75,17 +75,22 @@ app.get("/allPositions", async (req, res) => {
 
 app.get("/stockPrice/:symbol", async (req, res) => {
   try {
+    console.log("API KEY:", process.env.ALPHA_VANTAGE_API_KEY);
+
     const symbol = req.params.symbol;
 
     const response = await axios.get(
       `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}.BSE&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
     );
 
+    console.log("ALPHA RESPONSE:", response.data);
+
     const quote = response.data["Global Quote"];
 
     if (!quote || !quote["05. price"]) {
       return res.status(404).json({
         error: "Stock not found",
+        response: response.data,
       });
     }
 
@@ -94,13 +99,43 @@ app.get("/stockPrice/:symbol", async (req, res) => {
       price: Number(quote["05. price"]),
     });
   } catch (err) {
-    console.error(err);
+    console.error("ERROR:", err.response?.data || err.message);
 
     res.status(500).json({
       error: "Failed to fetch stock price",
+      details: err.response?.data || err.message,
     });
   }
 });
+
+// app.get("/stockPrice/:symbol", async (req, res) => {
+//   try {
+//     const symbol = req.params.symbol;
+
+//     const response = await axios.get(
+//       `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}.BSE&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
+//     );
+
+//     const quote = response.data["Global Quote"];
+
+//     if (!quote || !quote["05. price"]) {
+//       return res.status(404).json({
+//         error: "Stock not found",
+//       });
+//     }
+
+//     res.json({
+//       symbol,
+//       price: Number(quote["05. price"]),
+//     });
+//   } catch (err) {
+//     console.error(err);
+
+//     res.status(500).json({
+//       error: "Failed to fetch stock price",
+//     });
+//   }
+// });
 
 
 // app.get("/stockPrice/:symbol", async (req, res) => {
