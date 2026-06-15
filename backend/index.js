@@ -18,8 +18,10 @@ require('dotenv').config();
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: [
+      "https://zerodha-clone-silk-eta.vercel.app",
+      "https://zerodhaclone-liart.vercel.app",
+    ],
     credentials: true,
   })
 );
