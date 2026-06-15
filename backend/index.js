@@ -229,6 +229,9 @@ app.post("/newOrder",authRequired,async(req,res)=>{
     }
 });
 
+app.get("/test", (req, res) => {
+  res.send("Backend working");
+});
 
 app.post("/sellOrder",authRequired,async(req,res)=>{
     try {
