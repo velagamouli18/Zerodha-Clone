@@ -8,6 +8,7 @@ const path = require("path");
 const authRequired = require("./Middlewares/AuthRequired");
 const YahooFinance = require("yahoo-finance2").default;
 const yahooFinance = new YahooFinance();
+const axios = require("axios");
 
 const {HoldingModel} = require("./model/HoldingModel");
 const { PositionModel } = require('./model/PositionModel');
@@ -71,27 +72,89 @@ app.get("/allPositions", async (req, res) => {
 //     }
 // });
 
+
 app.get("/stockPrice/:symbol", async (req, res) => {
   try {
     const symbol = req.params.symbol;
 
-    const quote = await yahooFinance.quote(
-      `${symbol}.NS`
+    const response = await axios.get(
+      `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}.BSE&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
     );
+
+    const quote = response.data["Global Quote"];
+
+    if (!quote || !quote["05. price"]) {
+      return res.status(404).json({
+        error: "Stock not found",
+      });
+    }
 
     res.json({
       symbol,
-      price: quote.regularMarketPrice,
+      price: Number(quote["05. price"]),
     });
   } catch (err) {
-    console.error("Yahoo Error:", err);
+    console.error(err);
 
     res.status(500).json({
       error: "Failed to fetch stock price",
-      details: err.message,
     });
   }
 });
+
+
+// app.get("/stockPrice/:symbol", async (req, res) => {
+//   try {
+//     const symbol = req.params.symbol;
+
+//     const response = await axios.get(
+//       `https://api.twelvedata.com/price?symbol=${symbol}&exchange=NSE&apikey=${process.env.TWELVEDATA_API_KEY}`
+//     );
+
+//     console.log(response.data);
+
+//     res.json(response.data);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({
+//       error: err.message,
+//     });
+//   }
+// });
+
+
+// app.get("/stockPrice/:symbol", async (req, res) => {
+//   try {
+//     let symbol = req.params.symbol;
+
+//     const symbolMap = {
+//       "M&M": "M&M",
+//     };
+
+//     symbol = symbolMap[symbol] || symbol;
+
+//     const response = await axios.get(
+//       `https://api.twelvedata.com/price?symbol=${symbol}&exchange=NSE&apikey=${process.env.TWELVEDATA_API_KEY}`
+//     );
+
+//     if (response.data.status === "error") {
+//       return res.status(400).json({
+//         error: response.data.message,
+//       });
+//     }
+
+//     res.json({
+//       symbol,
+//       price: Number(response.data.price),
+//     });
+//   } catch (err) {
+//     console.error(err);
+
+//     res.status(500).json({
+//       error: "Failed to fetch stock price",
+//     });
+//   }
+// });
 
 app.post("/newOrder",authRequired,async(req,res)=>{
     try {
