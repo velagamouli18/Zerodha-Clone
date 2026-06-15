@@ -13,10 +13,12 @@ import Footer from './landing_page/Footer';
 import NotFound from './landing_page/NotFound';
 import Login from './landing_page/signup/Login';
 import 'react-toastify/dist/ReactToastify.css';
+import ScrollToTop from './ScrollToTop';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <BrowserRouter>
+    <ScrollToTop/>
       <NavBar/>
       <Routes>
         <Route path='/' element={<HomePage/>}></Route>

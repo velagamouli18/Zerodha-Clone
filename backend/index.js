@@ -5,6 +5,9 @@ const mongoose = require('mongoose');
 const cookieParser = require("cookie-parser");
 const authRoute = require("./Routes/AuthRoute");
 const path = require("path");
+const authRequired = require("./Middlewares/AuthRequired");
+const YahooFinance = require("yahoo-finance2").default;
+const yahooFinance = new YahooFinance();
 
 const {HoldingModel} = require("./model/HoldingModel");
 const { PositionModel } = require('./model/PositionModel');
@@ -50,7 +53,25 @@ app.get("/allPositions", async (req, res) => {
     }
 });
 
-app.post("/newOrder",async(req,res)=>{
+app.get("/stockPrice/:symbol", async (req, res) => {
+    try {
+        const symbol = req.params.symbol;
+
+        const quote = await yahooFinance.quote(`${symbol}.NS`);
+
+        res.json({
+            symbol,
+            price: quote.regularMarketPrice,
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            error: "Failed to fetch stock price",
+        });
+    }
+});
+
+app.post("/newOrder",authRequired,async(req,res)=>{
     try {
         const { name, qty, price, mode } = req.body ?? {};
 
@@ -71,17 +92,186 @@ app.post("/newOrder",async(req,res)=>{
         }
 
         const newOrder = await OrderModel.create({
+            userId:req.user.id,
             name,
             qty: parsedQty,
             price: parsedPrice,
             mode,
         });
 
+        let holding = await HoldingModel.findOne({
+            userId:req.user.id,
+            name:name,
+        });
+        if(holding){
+            holding.qty += parsedQty;
+            holding.avg =((holding.avg * (holding.qty - parsedQty))+(parsedPrice * parsedQty))/holding.qty;
+            await holding.save();
+        }
+        else{
+            await HoldingModel.create({
+                userId:req.user.id,
+                name,
+                qty:parsedQty,
+                avg:parsedPrice,
+                price:parsedPrice,
+            });
+        }
+        let position = await PositionModel.findOne({
+            userId:req.user.id,
+            name:name,
+        });
+        if(position){
+            position.qty += parsedQty;
+            position.avg =((position.avg * (position.qty - parsedQty))+(parsedPrice * parsedQty))/position.qty;
+            await position.save();
+        }
+        else{
+            await PositionModel.create({
+                userId:req.user.id,
+                product:"CNC",
+                name,
+                qty:parsedQty,
+                avg:parsedPrice,
+                price:parsedPrice,
+            });
+        }
+
         return res.status(201).json({ message: 'Order saved', order: newOrder });
     } catch (err) {
         console.error('POST /newOrder error:', err);
         return res.status(500).json({ error: 'Failed to create order' });
     }
+});
+
+
+app.post("/sellOrder",authRequired,async(req,res)=>{
+    try {
+        const { name, qty, price, mode } = req.body ?? {};
+
+        const parsedQty = Number(qty);
+        const parsedPrice = Number(price);
+
+        if (!name || typeof name !== 'string') {
+            return res.status(400).json({ error: 'name is required (string)' });
+        }
+        if (!Number.isFinite(parsedQty) || parsedQty<=0) {
+            return res.status(400).json({ error: 'qty must be a positive number' });
+        }
+        if (!Number.isFinite(parsedPrice) || parsedQty<=0) {
+            return res.status(400).json({ error: 'price must be a positive number' });
+        }
+        if (!mode || typeof mode !== 'string') {
+            return res.status(400).json({ error: 'mode is required (string)' });
+        }
+        const holding = await HoldingModel.findOne({
+            userId: req.user.id,
+            name,
+        });
+        if(!holding){
+        return res.status(404).json({
+                error:"Holding not found"
+            });
+        }
+            if(holding.qty < parsedQty){
+            return res.status(400).json({
+                error:"Insufficient quantity"
+            });
+        }
+        holding.qty -= parsedQty;
+        if(holding.qty === 0){
+            await HoldingModel.deleteOne({
+                _id: holding._id
+            });
+        }
+        else{
+            await holding.save();
+        }
+
+        const newsellOrder = await OrderModel.create({
+            userId:req.user.id,
+            name,
+            qty: parsedQty,
+            price: parsedPrice,
+            mode,
+        });
+        const position = await PositionModel.findOne({
+            userId: req.user.id,
+            name,
+        });
+        if(position){
+            position.qty -= parsedQty;
+
+            if(position.qty <= 0){
+                await PositionModel.deleteOne({
+                    _id: position._id
+                });
+            }
+            else{
+                await position.save();
+            }
+        }
+
+        return res.status(201).json({ message: 'Order saved', order: newsellOrder });
+    } catch (err) {
+        console.error('POST /sellOrder error:', err);
+        return res.status(500).json({ error: 'Failed to create order' });
+    }
+});
+
+
+app.get("/orders",authRequired,async (req,res)=>{
+    try{
+        const orders = await OrderModel.find({
+            userId : req.user.id,
+        });
+        res.status(200).json(orders);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({
+        error: "Failed to fetch orders",
+    });
+}
+});
+
+app.get("/holdings",authRequired,async (req,res)=>{
+    try{
+        const holdings = await HoldingModel.find({
+            userId : req.user.id,
+        });
+        res.status(200).json(holdings);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({
+        error: "Failed to fetch holdings",
+    });
+}
+});
+
+app.get("/logout", (req, res) => {
+  res.clearCookie("token");
+
+  res.status(200).json({
+    success: true,
+    message: "Logged out successfully",
+  });
+});
+
+app.get("/positions",authRequired,async (req,res)=>{
+    try{
+        const positions = await PositionModel.find({
+            userId : req.user.id,
+        });
+        res.status(200).json(positions);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({
+        error: "Failed to fetch positions",
+    });
+}
 });
 
 app.use((req, res) => {
@@ -253,6 +443,9 @@ app.use((req, res) => {
 //     });
 //     res.send("DOne!")
 // });
+
+
+
 async function start() {
     if (!mongoUri) {
         console.error('Missing MONGO_URI in environment (.env).');
@@ -274,7 +467,13 @@ async function start() {
 
 app.use(express.static(path.join(__dirname, "../frontend/build")));
 
-app.get("*", (req, res) => {
+// app.get("/*", (req, res) => {
+//   res.sendFile(
+//     path.join(__dirname, "../frontend/build/index.html")
+//   );
+// });
+
+app.use((req, res) => {
   res.sendFile(
     path.join(__dirname, "../frontend/build/index.html")
   );

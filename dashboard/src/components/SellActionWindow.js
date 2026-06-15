@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import api from "../api";
@@ -7,44 +7,48 @@ import GeneralContext from "./GeneralContext";
 
 import "./BuyActionWindow.css";
 
-const BuyActionWindow = ({ uid }) => {
+const SellActionWindow = ({ uid }) => {
   const [stockQuantity, setStockQuantity] = useState(1);
   const [stockPrice, setStockPrice] = useState(0.0);
   useEffect(() => {
     const fetchPrice = async () => {
-      try {
+        try {
         const res = await api.get(`/stockPrice/${uid}`);
         setStockPrice(res.data.price);
-      } catch (err) {
+        } catch (err) {
         console.error("Failed to fetch stock price", err);
-      }
+        }
     };
 
     fetchPrice();
-  }, [uid]);
+    }, [uid]);
 
   const generalContext = useContext(GeneralContext);
 
-  const handleBuyClick = async () => {
+  const handleSellClick = async () => {
     try {
-      await api.post("/newOrder", {
+      await api.post("/sellOrder", {
         name: uid,
         qty: stockQuantity,
         price: stockPrice,
-        mode: "BUY",
+        mode: "SELL",
       });
-      generalContext.closeBuyWindow();
+
+      generalContext.closeSellWindow();
     } catch (err) {
-      console.error("Failed to create order:", err);
+      alert(
+        err.response?.data?.error ||
+        "Failed to sell stock"
+        );
     }
   };
 
   const handleCancelClick = () => {
-    generalContext.closeBuyWindow();
+    generalContext.closeSellWindow();
   };
 
   return (
-    <div className="container" id="buy-window" draggable="true">
+    <div className="container" id="sell-window" draggable="true">
       <div className="regular-order">
         <div className="inputs">
           <fieldset>
@@ -53,23 +57,30 @@ const BuyActionWindow = ({ uid }) => {
               type="number"
               name="qty"
               id="qty"
-              onChange={(e) => setStockQuantity(e.target.value)}
               value={stockQuantity}
+              onChange={(e) => setStockQuantity(e.target.value)}
             />
           </fieldset>
+
           <div className="price-info">
-            Current Price: ₹{stockPrice}
-          </div>
+            Current Price: ₹{Number(stockPrice).toFixed(2)}
+           </div>
         </div>
       </div>
 
       <div className="buttons">
-        <span>Margin required ₹140.65</span>
+        <span>Sell Order</span>
+
         <div>
-          <Link className="btn btn-blue" onClick={handleBuyClick}>
-            Buy
+          <Link className="btn btn-blue" onClick={handleSellClick}>
+            Sell
           </Link>
-          <Link to="" className="btn btn-grey" onClick={handleCancelClick}>
+
+          <Link
+            to=""
+            className="btn btn-grey"
+            onClick={handleCancelClick}
+          >
             Cancel
           </Link>
         </div>
@@ -78,4 +89,4 @@ const BuyActionWindow = ({ uid }) => {
   );
 };
 
-export default BuyActionWindow;
+export default SellActionWindow;

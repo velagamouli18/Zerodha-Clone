@@ -8,10 +8,30 @@ const Holdings = () => {
   const [allHoldings, setAllHoldings] = useState([]);
 
   useEffect(() => {
-    api.get("/allHoldings").then((res) => {
-      // console.log(res.data);
-      setAllHoldings(res.data);
-    });
+    const fetchHoldings = async () => {
+      try {
+        const res = await api.get("/holdings");
+
+        const updatedHoldings = await Promise.all(
+          res.data.map(async (holding) => {
+            const priceRes = await api.get(
+              `/stockPrice/${holding.name}`
+            );
+
+            return {
+              ...holding,
+              price: priceRes.data.price,
+            };
+          })
+        );
+
+        setAllHoldings(updatedHoldings);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchHoldings();
   }, []);
 
   // const labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
@@ -58,15 +78,15 @@ const Holdings = () => {
             <th>Cur. val</th>
             <th>P&L</th>
             <th>Net chg.</th>
-            <th>Day chg.</th>
           </tr>
 
           {allHoldings.map((stock, index) => {
             const curValue = stock.price * stock.qty;
-            const isProfit = curValue - stock.avg * stock.qty >= 0.0;
+            const pnl = (stock.price - stock.avg) * stock.qty;
+            const netChange =
+              ((stock.price - stock.avg) / stock.avg) * 100;
+            const isProfit = pnl >= 0;
             const profClass = isProfit ? "profit" : "loss";
-            const dayClass = stock.isLoss ? "loss" : "profit";
-
             return (
               <tr key={index}>
                 <td>{stock.name}</td>
@@ -75,33 +95,15 @@ const Holdings = () => {
                 <td>{stock.price.toFixed(2)}</td>
                 <td>{curValue.toFixed(2)}</td>
                 <td className={profClass}>
-                  {(curValue - stock.avg * stock.qty).toFixed(2)}
+                  {pnl.toFixed(2)}
                 </td>
-                <td className={profClass}>{stock.net}</td>
-                <td className={dayClass}>{stock.day}</td>
+                <td className={profClass}>
+                  {netChange.toFixed(2)}%
+                </td>
               </tr>
             );
           })}
         </table>
-      </div>
-
-      <div className="row">
-        <div className="col">
-          <h5>
-            29,875.<span>55</span>{" "}
-          </h5>
-          <p>Total investment</p>
-        </div>
-        <div className="col">
-          <h5>
-            31,428.<span>95</span>{" "}
-          </h5>
-          <p>Current value</p>
-        </div>
-        <div className="col">
-          <h5>1,553.40 (+5.20%)</h5>
-          <p>P&L</p>
-        </div>
       </div>
       <VerticalGraph data={data} />
     </>

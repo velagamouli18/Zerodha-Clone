@@ -1,6 +1,5 @@
-import React, { useState, useContext } from "react";
-
-import axios from "axios";
+import React, { useState, useContext, useEffect } from "react";
+import api from "../api";
 
 import GeneralContext from "./GeneralContext";
 
@@ -16,15 +15,43 @@ import {
 import { watchlist } from "../data/data";
 import { DoughnutChart } from "./DoughnoutChart";
 
-const labels = watchlist.map((subArray) => subArray["name"]);
 
 const WatchList = () => {
+  const [liveWatchlist, setLiveWatchlist] = useState(watchlist);
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const updatedStocks = await Promise.all(
+          watchlist.map(async (stock) => {
+            const res = await api.get(
+              `/stockPrice/${stock.name}`
+            );
+
+            return {
+              ...stock,
+              price: res.data.price,
+            };
+          })
+        );
+
+        setLiveWatchlist(updatedStocks);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchPrices();
+  }, []);
+  const [searchTerm, setSearchTerm] = useState("");
+    const labels = liveWatchlist.map(
+    (stock) => stock.name
+  );
   const data = {
     labels,
     datasets: [
       {
         label: "Price",
-        data: watchlist.map((stock) => stock.price),
+        data: liveWatchlist.map((stock) => stock.price),
         backgroundColor: [
           "rgba(255, 99, 132, 0.5)",
           "rgba(54, 162, 235, 0.5)",
@@ -45,6 +72,11 @@ const WatchList = () => {
       },
     ],
   };
+  const filteredWatchlist = liveWatchlist.filter((stock) =>
+    stock.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+
 
   // export const data = {
   //   labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
@@ -78,16 +110,21 @@ const WatchList = () => {
       <div className="search-container">
         <input
           type="text"
+          style={{color:"black"}}
           name="search"
           id="search"
           placeholder="Search eg:infy, bse, nifty fut weekly, gold mcx"
           className="search"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <span className="counts"> {watchlist.length} / 50</span>
+        <span className="counts">
+          {filteredWatchlist.length} / {liveWatchlist.length}
+        </span>
       </div>
 
       <ul className="list">
-        {watchlist.map((stock, index) => {
+        {filteredWatchlist.map((stock, index) => {
           return <WatchListItem stock={stock} key={index} />;
         })}
       </ul>
@@ -121,7 +158,9 @@ const WatchListItem = ({ stock }) => {
           ) : (
             <KeyboardArrowUp className="down" />
           )}
-          <span className="price">{stock.price}</span>
+          <span className="price">
+            ₹{Number(stock.price).toFixed(2)}
+          </span>
         </div>
       </div>
       {showWatchlistActions && <WatchListActions uid={stock.name} />}
@@ -134,6 +173,9 @@ const WatchListActions = ({ uid }) => {
 
   const handleBuyClick = () => {
     generalContext.openBuyWindow(uid);
+  };
+  const handleSellClick = () => {
+    generalContext.openSellWindow(uid);
   };
 
   return (
@@ -153,6 +195,7 @@ const WatchListActions = ({ uid }) => {
           placement="top"
           arrow
           TransitionComponent={Grow}
+          onClick = {handleSellClick}
         >
           <button className="sell">Sell</button>
         </Tooltip>

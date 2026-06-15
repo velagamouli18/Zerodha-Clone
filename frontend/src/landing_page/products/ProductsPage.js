@@ -3,10 +3,16 @@ import Hero from './Hero';
 import LeftSection from './LeftSection';
 import RightSection from './RightSection';
 import Universe from './Universe';
+import { useNavigate } from "react-router-dom";
 
 function ProductsPage() {
+    const navigate = useNavigate();
+    const handleSignup = () => {
+    navigate("/signup");
+    };
     return ( 
         <>
+            
             <Hero/>
             <LeftSection 
             imageURL="media/images/kite.png" 
@@ -56,7 +62,7 @@ function ProductsPage() {
             
             <Universe/>
             <div className='text-center'>
-            <button className='p-2 fs-5 m-5 btn btn-primary' style={{width:"15%", margin:"0 auto", backgroundColor:"blue", color:"white",opacity:"70%"}}>
+            <button className='p-2 fs-5 m-5 btn btn-primary' style={{width:"15%", margin:"0 auto", backgroundColor:"blue", color:"white",opacity:"70%"}} onClick={handleSignup}>
                 Sign up for free
             </button>
             </div>
