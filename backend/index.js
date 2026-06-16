@@ -76,36 +76,46 @@ app.get("/allPositions", async (req, res) => {
 
 
 app.get("/stockPrice/:symbol", async (req, res) => {
-  try {
-    console.log("API KEY:", process.env.ALPHA_VANTAGE_API_KEY);
+  const fallbackPrices = {
+    INFY: 1120,
+    TCS: 3450,
+    WIPRO: 265,
+    RELIANCE: 1480,
+    "M&M": 3120,
+    ONGC: 245,
+    KPITTECH: 1225,
+    QUICKHEAL: 385,
+  };
 
+  try {
     const symbol = req.params.symbol;
 
     const response = await axios.get(
       `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}.BSE&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
     );
 
-    console.log("ALPHA RESPONSE:", response.data);
-
     const quote = response.data["Global Quote"];
 
     if (!quote || !quote["05. price"]) {
-      return res.status(404).json({
-        error: "Stock not found",
-        response: response.data,
+      return res.json({
+        symbol,
+        price: fallbackPrices[symbol] || 1000,
+        fallback: true,
       });
     }
 
     res.json({
       symbol,
       price: Number(quote["05. price"]),
+      fallback: false,
     });
   } catch (err) {
     console.error("ERROR:", err.response?.data || err.message);
 
-    res.status(500).json({
-      error: "Failed to fetch stock price",
-      details: err.response?.data || err.message,
+    res.json({
+      symbol: req.params.symbol,
+      price: fallbackPrices[req.params.symbol] || 1000,
+      fallback: true,
     });
   }
 });
