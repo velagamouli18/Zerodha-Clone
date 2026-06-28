@@ -842,4 +842,37 @@ hr {
   background-color: rgb(212, 212, 212);
 }
 
+/* Dashboard Layout */
 
+.dashboard-layout{
+    display:flex;
+    width:100%;
+    height:90vh;
+    overflow:hidden;
+}
+
+
+.watchlist-section{
+    width:32%;
+    transition:width .60s ease;
+}
+
+.watchlist-section.watchlist-open{
+    width:25%;
+}
+
+.content-section{
+    width:70%;
+    transition:width .60s ease;
+    overflow-y:auto;
+    padding:3% 2%;
+    box-sizing:border-box;
+}
+
+.content-section.content-open{
+    width:50%;
+}
+
+.content-section.shrink {
+  flex: 0 0 calc(68% - 380px);
+}

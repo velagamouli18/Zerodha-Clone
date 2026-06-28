@@ -113,7 +113,7 @@ const WatchList = () => {
           style={{color:"black"}}
           name="search"
           id="search"
-          placeholder="Search eg:infy, bse, nifty fut weekly, gold mcx"
+          placeholder="Search eg:infy, bse, nifty fut weekly"
           className="search"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}

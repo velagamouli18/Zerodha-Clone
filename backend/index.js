@@ -13,12 +13,15 @@ const axios = require("axios");
 const {HoldingModel} = require("./model/HoldingModel");
 const { PositionModel } = require('./model/PositionModel');
 const { OrderModel } = require('./model/OrderModel');
+const chatRoutes = require("./Routes/chat");
 
 require('dotenv').config();
 
 app.use(
   cors({
     origin: [
+        "http://localhost:3000",
+        "http://localhost:3001",
       "https://zerodha-clone-silk-eta.vercel.app",
       "https://zerodhaclone-liart.vercel.app",
     ],
@@ -33,6 +36,7 @@ const port = process.env.PORT || 3002;
 const mongoUri = process.env.MONGO_URI;
 
 app.use("/", authRoute);
+app.use("/chat", chatRoutes);
 
 app.get("/allHoldings", async (req, res) => {
     try {
